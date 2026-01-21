@@ -12,8 +12,11 @@ out/
 logs/
 *.log
 
-# --- Services runtime (for now, not versioned) ---
-services/
+# --- Services runtime (ignore all except noesis-bridge) ---
+services/**
+!services/noesis-bridge/
+!services/noesis-bridge/**
+services/noesis-bridge/.venv/
 
 # --- Infrastructure / ops ---
 infra/
