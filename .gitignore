@@ -1,0 +1,29 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+.env
+.env.*
+
+# --- Runtime / outputs ---
+out/
+logs/
+*.log
+
+# --- Services runtime (for now, not versioned) ---
+services/
+
+# --- Infrastructure / ops ---
+infra/
+scripts/
+
+# --- TinyMUX / vendor sources ---
+mux2.13/
+mux-*.tar.gz
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
