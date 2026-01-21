@@ -1,0 +1,20 @@
+connection:
+  host: "127.0.0.1"
+  port: 2860
+
+auth:
+  username: "NoesisBridge"
+  password: "Test123$"
+
+output:
+  out_dir: "/opt/tinymux/out"
+  events_subdir: "events"
+  meta_subdir: "meta"
+  logs_subdir: "logs"
+
+logging:
+  level: "INFO"
+
+mode:
+  name: "record"  # dry_run | record
+

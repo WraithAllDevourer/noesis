@@ -1,0 +1,8 @@
+out_dir: "/opt/tinymux/out"
+identity_map_path: "/opt/tinymux/services/noesis-bridge/identity_map.json"
+templates_path: "/opt/tinymux/services/noesis-bridge/templates.yaml"
+
+language: "pl"
+follow_utc: true
+from_start: false
+poll_ms: 200

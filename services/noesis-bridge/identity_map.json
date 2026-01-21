@@ -1,0 +1,15 @@
+{
+  "actors": {
+    "#1": "Wizard",
+    "#2": "Observer",
+    "#6": "NoesisBridge",
+    "#10": "Elias"
+  },
+  "locations": {
+    "#3": "Room_1",
+    "#4": "Master_Room",
+    "#7": "Haven",
+    "#8": "Hatanpaa Mansion",
+    "#9": "Kolorowa Krowa"
+  }
+}

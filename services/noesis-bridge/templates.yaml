@@ -1,0 +1,7 @@
+SAY:
+  pl: '{ts} {actor} {verb}: „{raw}”  @ {location}'
+  en: '{ts} {actor} {verb}: "{raw}"  @ {location}'
+
+MOVE:
+  pl: '{ts} {actor} przemieszcza się: {from_loc} → {to_loc}'
+  en: '{ts} {actor} moves: {from_loc} -> {to_loc}'
