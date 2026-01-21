@@ -16,15 +16,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 7979
           script: |
-            set -euxo pipefail
-            echo "== whoami/id =="
             whoami
             id
-            echo "== sudo -n -l =="
             sudo -n -l || true
-            echo "== check sudoers files =="
-            sudo -n ls -la /etc/sudoers.d || true
-            sudo -n cat /etc/sudoers.d/noesis-ci || true
-            sudo -n cat /etc/sudoers.d/noesis-update || true
-            echo "== run update =="
             /usr/local/bin/noesis-update
