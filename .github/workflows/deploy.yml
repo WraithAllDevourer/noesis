@@ -16,7 +16,4 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 7979
           script: |
-            whoami
-            id
-            sudo -n -l || true
             /usr/local/bin/noesis-update
