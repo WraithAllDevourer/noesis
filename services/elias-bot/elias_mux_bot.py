@@ -341,6 +341,11 @@ class EliasMuxBot:
                 # Avoid weird loops / empty
                 if not msg:
                     continue
+                msg = msg.strip()
+
+                if msg == "@@healthcheck":
+                    self.send_line(f"page {who}=@@ok {int(time.time())}")
+                    continue
 
                 try:
                     answer = elias_reply(self.oa, self.model, msg)
