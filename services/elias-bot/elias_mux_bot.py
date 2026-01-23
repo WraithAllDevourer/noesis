@@ -249,5 +249,27 @@ class EliasMuxBot:
 
         # Try to get into
 
+
+def main():
+    logging.basicConfig(
+        level=os.environ.get("LOG_LEVEL", "INFO"),
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+    backoff = 1.0
+    while True:
+        bot = EliasMuxBot()
+        try:
+            bot.connect()
+            bot.login_and_settle()
+            backoff = 1.0
+            bot.loop()
+        except Exception as e:
+            LOG.warning("Disconnected / crash: %s", e)
+            bot.close()
+            time.sleep(backoff)
+            backoff = min(backoff * 1.7, 30.0)
+
+
 if __name__ == "__main__":
     main()
