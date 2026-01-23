@@ -14,9 +14,12 @@ logs/
 
 # --- Services runtime (ignore all except noesis-bridge) ---
 services/**
+!services/elias-bot/
+!services/elias-bot/**
 !services/noesis-bridge/
 !services/noesis-bridge/**
 services/noesis-bridge/.venv/
+
 
 # --- Infrastructure / ops ---
 infra/
