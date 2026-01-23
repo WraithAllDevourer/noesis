@@ -248,3 +248,6 @@ class EliasMuxBot:
             time.sleep(0.05)
 
         # Try to get into
+
+if __name__ == "__main__":
+    main()
