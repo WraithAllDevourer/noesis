@@ -125,17 +125,40 @@ def elias_reply(client: OpenAI, model: str, prompt: str) -> str:
             text = "…cisza w eterze. Spróbuj jeszcze raz."
     return text.strip()
 
+def parse_say(line: str) -> Optional[Tuple[str, str]]:
+    for pat in SAY_PATTERNS:
+        m = pat.match(line.strip())
+        if m:
+            return m.group("who").strip(), (m.group("msg") or "").strip()
+    return None
+
 
 # --- Main bot -----------------------------------------------------------------
+# Stara wersja:
+# PAGE_PATTERNS = [
+#     # Typical MUX-ish: "X pages: message"
+#     re.compile(r"^(?P<who>.+?)\s+pages:\s*(?P<msg>.*)$", re.IGNORECASE),
+#     # Sometimes: "From afar, X pages: msg"
+#     re.compile(r"^From afar,\s+(?P<who>.+?)\s+pages:\s*(?P<msg>.*)$", re.IGNORECASE),
+#     # Sometimes: "You sense that X is looking for you. msg"
+#     re.compile(r"^You sense that\s+(?P<who>.+?)\s+is looking for you\.?\s*(?P<msg>.*)$", re.IGNORECASE),
+# ]
 
 PAGE_PATTERNS = [
-    # Typical MUX-ish: "X pages: message"
     re.compile(r"^(?P<who>.+?)\s+pages:\s*(?P<msg>.*)$", re.IGNORECASE),
-    # Sometimes: "From afar, X pages: msg"
     re.compile(r"^From afar,\s+(?P<who>.+?)\s+pages:\s*(?P<msg>.*)$", re.IGNORECASE),
-    # Sometimes: "You sense that X is looking for you. msg"
     re.compile(r"^You sense that\s+(?P<who>.+?)\s+is looking for you\.?\s*(?P<msg>.*)$", re.IGNORECASE),
 ]
+
+SAY_PATTERNS = [
+    # PL: Wizard mówi: „Elias, jaka dzisiaj jest noc?”
+    re.compile(r"^(?P<who>.+?)\s+mówi:\s*[„\"](?P<msg>.*?)[”\"]\s*$", re.IGNORECASE),
+    # EN: Wizard says, "Elias, what night is it?"
+    re.compile(r"^(?P<who>.+?)\s+says,?\s*[\"“](?P<msg>.*?)[\"”]\s*$", re.IGNORECASE),
+]
+
+# wołanie Eliasa na początku wypowiedzi
+CALL_ELIAS = re.compile(r"^\s*(?:@?Elias\b[:,]?\s*)(?P<rest>.*)$", re.IGNORECASE)
 
 
 class EliasMuxBot:
@@ -168,6 +191,21 @@ class EliasMuxBot:
             except Exception:
                 pass
         self.sock = None
+
+    def handle_and_reply(self, who: str, msg: str):
+        LOG.info("Ask from %s: %s", who, msg)
+
+        try:
+            answer = elias_reply(self.oa, self.model, msg)
+        except Exception as e:
+            LOG.exception("OpenAI error")
+            answer = f"Coś chrupnęło w eterze: {e}"
+
+        answer = " ".join(answer.splitlines()).strip()
+        if len(answer) > 800:
+            answer = answer[:780].rstrip() + "…"
+
+        self.send_line(f"page {who}={answer}")
 
     def send_line(self, line: str):
         if not self.sock:
@@ -266,13 +304,38 @@ class EliasMuxBot:
                 self.last_activity_ms = now_ms()
 
             for line in self.read_lines():
-                LOG.debug("<< %s", line)
-
+                # 1) PAGE (zawsze odpowiadamy)
                 parsed = self.parse_page(line)
-                if not parsed:
+                if parsed:
+                    who, msg = parsed
+                    msg = msg.strip()
+
+                    # healthcheck bez AI (zero kosztu)
+                    if msg == "@@healthcheck":
+                        self.send_line(f"page {who}=@@ok {int(time.time())}")
+                        continue
+
+                    # normalna odpowiedź przez AI
+                    self.handle_and_reply(who, msg)
                     continue
 
-                who, msg = parsed
+                # 2) SAY w pokoju (odpowiadamy TYLKO gdy ktoś woła Eliasa)
+                said = parse_say(line)
+                if not said:
+                    continue
+
+                who, msg = said
+                m = CALL_ELIAS.match(msg)
+                if not m:
+                    continue  # ktoś mówi, ale nie do Eliasa
+
+                prompt = (m.group("rest") or "").strip()
+                if not prompt:
+                    continue
+
+                # odpowiadamy prywatnie, żeby nie spamować lokacji
+                self.handle_and_reply(who, prompt)
+
                 LOG.info("Page from %s: %s", who, msg)
 
                 # Avoid weird loops / empty
