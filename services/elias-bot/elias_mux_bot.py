@@ -103,10 +103,14 @@ def elias_reply(client: OpenAI, model: str, prompt: str) -> str:
     Uses Responses API (recommended).
     """
     system = (
-        "Jesteś Eliasem – always-on NPC w TinyMUX. "
-        "Odpowiadasz krótko, po polsku, bez emoji-spamu. "
-        "Masz lekko mroczny, gotycko-punkowy vibe, ale nie przesadzasz. "
-        "Jeśli pytanie jest techniczne (TinyMUX, Noesis, boty), odpowiadasz konkretnie."
+        "Jesteś Eliasem, wampirem w śnieżnej Finlandii."
+        "Jesteś Malkawianem według systemu World of Darkness Vampire the Masquerade 20th Anniversary Edition."
+        "Jesteś bardzo starym i zmęczonym Maskaradą i intrygami wampirem o ogromnej, wręcz kompletnej wiedzy z zakresu świata wampirów."
+        "Nie tłumaczysz kim jesteś wprost, nie mówisz o systemach, serwerach ani narzędziach. "
+        "Mówisz krótko, niejednoznacznie, z chłodną pewnością. "
+        "Twoje odpowiedzi mają sprawić, że rozmówca wie mniej niż przed pytaniem. "
+        "Zasady: 1–2 krótkie zdania. Maks 25 słów. Bez list, bez poradników, bez autopromocji. "
+        "Jeśli ktoś pyta 'kim jesteś' – odpowiadasz jak zagadka, po czym milkniesz."
     )
     # Keep it simple: system + user prompt
     resp = client.responses.create(
@@ -131,6 +135,9 @@ def parse_say(line: str) -> Optional[Tuple[str, str]]:
         if m:
             return m.group("who").strip(), (m.group("msg") or "").strip()
     return None
+
+def normalize_text(s: str) -> str:
+    return re.sub(r"\s+", " ", s.strip().lower())
 
 
 # --- Main bot -----------------------------------------------------------------
@@ -174,6 +181,8 @@ class EliasMuxBot:
         self.buf = bytearray()
         self.last_activity_ms = now_ms()
 
+        self.recent_say = {}  # (who, normalized_msg) -> timestamp
+
         self.oa = build_client()
 
     def connect(self):
@@ -202,8 +211,8 @@ class EliasMuxBot:
             answer = f"Coś chrupnęło w eterze: {e}"
 
         answer = " ".join(answer.splitlines()).strip()
-        if len(answer) > 800:
-            answer = answer[:780].rstrip() + "…"
+        if len(answer) > 220:
+            answer = answer[:210].rstrip() + "…"
 
         self.send_line(f"page {who}={answer}")
 
@@ -325,6 +334,18 @@ class EliasMuxBot:
                     continue
 
                 who, msg = said
+                norm = (who.strip().lower(), normalize_text(msg))
+                now = time.time()
+
+                # wyczyść stare wpisy (prosto, bez LRU)
+                for k, t in list(self.recent_say.items()):
+                    if now - t > 2.0:
+                        del self.recent_say[k]
+
+                if norm in self.recent_say:
+                    continue  # duplikat PL/EN
+                self.recent_say[norm] = now
+
                 m = CALL_ELIAS.match(msg)
                 if not m:
                     continue  # ktoś mówi, ale nie do Eliasa
@@ -335,32 +356,6 @@ class EliasMuxBot:
 
                 # odpowiadamy prywatnie, żeby nie spamować lokacji
                 self.handle_and_reply(who, prompt)
-
-                LOG.info("Page from %s: %s", who, msg)
-
-                # Avoid weird loops / empty
-                if not msg:
-                    continue
-                msg = msg.strip()
-
-                if msg == "@@healthcheck":
-                    self.send_line(f"page {who}=@@ok {int(time.time())}")
-                    continue
-
-                try:
-                    answer = elias_reply(self.oa, self.model, msg)
-                except Exception as e:
-                    LOG.exception("OpenAI error")
-                    answer = f"Coś chrupnęło w eterze: {e}"
-
-                # TinyMUX page back
-                # Keep it single line, MUX-friendly
-                answer = " ".join(answer.splitlines()).strip()
-                if len(answer) > 800:
-                    answer = answer[:780].rstrip() + "…"
-
-                self.send_line(f"page {who}={answer}")
-
             time.sleep(0.05)
 
 
