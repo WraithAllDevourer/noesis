@@ -101,5 +101,90 @@ Common examples (adjust to reality):
 ### 6.2 Run Noesis Bridge
 From `services/noesis-bridge/`:
 
-```bash
+```
 python src/bridge.py
+```
+
+Expected behavior:
+
+connects to the MUX host/port from config.yaml
+
+writes run meta into out/meta/
+
+writes telemetry artifacts (if enabled)
+
+6.3 Sanity checks
+
+out/meta/ contains a new run-*.json
+
+logs show “connected” and “mode=record” (or the configured mode)
+
+7) Development workflow
+7.1 Ground rules
+
+Never commit secrets (.env, tokens, credentials).
+
+Never commit runtime output (out/, logs, dumps).
+
+Prefer small, reviewable commits that preserve replay/debug ability.
+
+7.2 Code quality (recommended defaults)
+
+TODO: align with whatever you actually use; examples:
+
+Python formatting: ruff format / black
+
+Linting: ruff
+
+Type checking: mypy
+
+Tests: pytest
+
+7.3 Logging conventions
+
+Logs should always include run_id where possible.
+
+Log levels should be controllable via config.
+
+8) Operational notes (VPS)
+
+This repo is designed to run on a VPS where:
+
+TinyMUX runs as a long-lived service (often systemd-managed).
+
+Bridge/services run as systemd services or containerized workers.
+
+Artifacts (out/) live on disk with enough space for capture/replay.
+
+TODO: add systemd unit templates (or docker-compose) once stabilized.
+
+9) Roadmap (current intent)
+
+These are the “north star” tasks implied by the architecture:
+
+ Telemetry ingest → JSONL (stable schema + validation)
+
+ Optional perception enrichment stage (telemetry → perception-aware events)
+
+ Telemetry emitter inside TinyMUX (if required by design)
+
+ RAG wiring after telemetry + perception filter, inside render/AI layer
+
+ Replay tooling (select run_id → replay → deterministic-ish behavior)
+
+10) Contribution & decision log
+10.1 Contribution rules
+
+Update MANIFEST.md if directory contracts change.
+
+Update this PROJECT.md if architecture or workflow changes.
+
+Keep configs non-secret; secrets go into .env / manager.
+
+10.2 Decision log (add entries)
+
+YYYY-MM-DD: Decision title — short rationale + consequences.
+
+Example:
+
+2026-01-15: RAG moved to render layer after telemetry/perception — keeps world authoritative, avoids coupling AI to core simulation.
